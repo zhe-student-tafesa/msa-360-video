@@ -303,7 +303,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
       ..onFinishedChange = onReceiveEnded;
     _viewPlayerController.loadVideo(
       videoUrl:
-      'https://cdn.bitmovin.com/content/assets/playhouse-vr/m3u8s/105560.m3u8',
+      'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     );
   }
 
