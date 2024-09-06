@@ -1,125 +1,377 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:vr_player/vr_player.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: HomePage(),
+        ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HomePageState extends State<HomePage> {
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: buttonOnPressed,
+      child: const Text('Start Video'),
+    );
+  }
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  void buttonOnPressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const VideoPlayerPage(),
+      ),
+    );
+  }
+}
+
+class VideoPlayerPage extends StatefulWidget {
+  const VideoPlayerPage({super.key});
+
+  @override
+  _VideoPlayerPageState createState() => _VideoPlayerPageState();
+}
+
+class _VideoPlayerPageState extends State<VideoPlayerPage>
+    with TickerProviderStateMixin {
+  late VrPlayerController _viewPlayerController;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+  bool _isShowingBar = false;
+  bool _isPlaying = false;
+  bool _isFullScreen = false;
+  bool _isVideoFinished = false;
+  bool _isLandscapeOrientation = false;
+  bool _isVolumeSliderShown = false;
+  bool _isVolumeEnabled = true;
+  late double _playerWidth;
+  late double _playerHeight;
+  String? _duration;
+  int? _intDuration;
+  bool isVideoLoading = false;
+  bool isVideoReady = false;
+  String? _currentPosition;
+  double _currentSliderValue = 0.1;
+  double _seekPosition = 0;
+
+  @override
+  void initState() {
+    _animationController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _toggleShowingBar();
+    super.initState();
+  }
+
+  void _toggleShowingBar() {
+    switchVolumeSliderDisplay(show: false);
+
+    _isShowingBar = !_isShowingBar;
+    if (_isShowingBar) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    _playerWidth = MediaQuery.of(context).size.width;
+    _playerHeight =
+    _isFullScreen ? MediaQuery.of(context).size.height : _playerWidth / 2;
+    _isLandscapeOrientation =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('VR Player'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
+      body: GestureDetector(
+        onTap: _toggleShowingBar,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+            VrPlayer(
+              x: 0,
+              y: 0,
+              onCreated: onViewPlayerCreated,
+              width: _playerWidth,
+              height: _playerHeight,
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: FadeTransition(
+                opacity: _animation,
+                child: ColoredBox(
+                  color: Colors.black,
+                  child: Row(
+                    children: <Widget>[
+                      IconButton(
+                        icon: Icon(
+                          _isVideoFinished
+                              ? Icons.replay
+                              : _isPlaying
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                        onPressed: playAndPause,
+                      ),
+                      Text(
+                        _currentPosition?.toString() ?? '00:00',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      Expanded(
+                        child: SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: Colors.amberAccent,
+                            inactiveTrackColor: Colors.grey,
+                            trackHeight: 5,
+                            thumbColor: Colors.white,
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8,
+                            ),
+                            overlayColor: Colors.purple.withAlpha(32),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 14,
+                            ),
+                          ),
+                          child: Slider(
+                            value: _seekPosition,
+                            max: _intDuration?.toDouble() ?? 0,
+                            onChangeEnd: (value) {
+                              _viewPlayerController.seekTo(value.toInt());
+                            },
+                            onChanged: (value) {
+                              onChangePosition(value.toInt());
+                            },
+                          ),
+                        ),
+                      ),
+                      Text(
+                        _duration?.toString() ?? '99:99',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      if (_isFullScreen || _isLandscapeOrientation)
+                        IconButton(
+                          icon: Icon(
+                            _isVolumeEnabled
+                                ? Icons.volume_up_rounded
+                                : Icons.volume_off_rounded,
+                            color: Colors.white,
+                          ),
+                          onPressed: () =>
+                              switchVolumeSliderDisplay(show: true),
+                        ),
+                      IconButton(
+                        icon: Icon(
+                          _isFullScreen
+                              ? Icons.fullscreen_exit
+                              : Icons.fullscreen,
+                          color: Colors.white,
+                        ),
+                        onPressed: fullScreenPressed,
+                      ),
+                      if (_isFullScreen)
+                        IconButton(
+                          icon: Image.asset(
+                            'assets/icons/cardboard.png',
+                            color: Colors.white,
+                            width: 15.0,
+                          ),
+                          onPressed: cardBoardPressed,
+                        )
+                      else
+                        Container(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              height: 180,
+              right: 4,
+              top: MediaQuery.of(context).size.height / 4,
+              child: _isVolumeSliderShown
+                  ? RotatedBox(
+                quarterTurns: 3,
+                child: Slider(
+                  value: _currentSliderValue,
+                  divisions: 10,
+                  onChanged: onChangeVolumeSlider,
+                ),
+              )
+                  : const SizedBox(),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  void cardBoardPressed() {
+    _viewPlayerController.toggleVRMode();
+  }
+
+  Future<void> fullScreenPressed() async {
+    await _viewPlayerController.fullScreen();
+    setState(() {
+      _isFullScreen = !_isFullScreen;
+    });
+
+    if (_isFullScreen) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeRight,
+        DeviceOrientation.landscapeLeft,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [],
+      );
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeRight,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+    }
+  }
+
+  Future<void> playAndPause() async {
+    if (_isVideoFinished) {
+      await _viewPlayerController.seekTo(0);
+    }
+
+    if (_isPlaying) {
+      await _viewPlayerController.pause();
+    } else {
+      await _viewPlayerController.play();
+    }
+
+    setState(() {
+      _isPlaying = !_isPlaying;
+      _isVideoFinished = false;
+    });
+  }
+
+  void onViewPlayerCreated(
+      VrPlayerController controller,
+      VrPlayerObserver observer,
+      ) {
+    _viewPlayerController = controller;
+    observer
+      ..onStateChange = onReceiveState
+      ..onDurationChange = onReceiveDuration
+      ..onPositionChange = onChangePosition
+      ..onFinishedChange = onReceiveEnded;
+    _viewPlayerController.loadVideo(
+      videoUrl:
+      'https://cdn.bitmovin.com/content/assets/playhouse-vr/m3u8s/105560.m3u8',
+    );
+  }
+
+  void onReceiveState(VrState state) {
+    switch (state) {
+      case VrState.loading:
+        setState(() {
+          isVideoLoading = true;
+        });
+        break;
+      case VrState.ready:
+        setState(() {
+          isVideoLoading = false;
+          isVideoReady = true;
+        });
+        break;
+      case VrState.buffering:
+      case VrState.idle:
+        break;
+    }
+  }
+
+  void onReceiveDuration(int millis) {
+    setState(() {
+      _intDuration = millis;
+      _duration = millisecondsToDateTime(millis);
+    });
+  }
+
+  void onChangePosition(int millis) {
+    setState(() {
+      _currentPosition = millisecondsToDateTime(millis);
+      _seekPosition = millis.toDouble();
+    });
+  }
+
+  // ignore: avoid_positional_boolean_parameters
+  void onReceiveEnded(bool isFinished) {
+    setState(() {
+      _isVideoFinished = isFinished;
+    });
+  }
+
+  void onChangeVolumeSlider(double value) {
+    _viewPlayerController.setVolume(value);
+    setState(() {
+      _isVolumeEnabled = value != 0;
+      _currentSliderValue = value;
+    });
+  }
+
+  void switchVolumeSliderDisplay({required bool show}) {
+    setState(() {
+      _isVolumeSliderShown = show;
+    });
+  }
+
+  String millisecondsToDateTime(int milliseconds) =>
+      setDurationText(Duration(milliseconds: milliseconds));
+
+  String setDurationText(Duration duration) {
+    String twoDigits(int n) {
+      if (n >= 10) return '$n';
+      return '0$n';
+    }
+
+    final twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    final twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return '${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds';
   }
 }
