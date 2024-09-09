@@ -39,9 +39,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: buttonOnPressed,
-      child: const Text('Start Video'),
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: buttonOnPressed,
+          child: const Text('Start Video'),
+        ),
+      ),
     );
   }
 
@@ -91,6 +96,23 @@ class _VideoPlayerPageState extends State<VideoPlayerPage>
     _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
     _toggleShowingBar();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    // dispose AnimationController
+    _animationController.dispose();
+
+    //  Restore portrait mode and display system buttons
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
   }
 
   void _toggleShowingBar() {
